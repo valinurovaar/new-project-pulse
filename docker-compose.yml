@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: projectpulse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d projectpulse"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+  app:
+    build: .
+    depends_on:
+      postgres: {condition: service_healthy}
+    environment:
+      RUN_ADDRESS: :8080
+      DATABASE_URI: postgres://postgres:postgres@postgres:5432/projectpulse?sslmode=disable
+      INSPECTOR_ADDRESS: ${INSPECTOR_ADDRESS:-http://host.docker.internal:8081}
+      AUTH_SECRET: ${AUTH_SECRET:-development-secret-change-this-32chars}
+      CHECK_INTERVAL: 24h
+      WORKER_COUNT: 2
+    ports: ["8080:8080"]
+volumes:
+  postgres_data:
+
